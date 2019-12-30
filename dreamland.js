@@ -88,11 +88,11 @@ class DreamLand {
     }
 
     async updateAll(args) {
-        await enqueueToDream('http://localhost:1235/update/all', this.options(args));
+        await enqueueToDream(`${api}/update/all`, this.options(args));
     }
 
     async updateOne(args) {
-        await enqueueToDream('http://localhost:1235/update/one', this.options(args));
+        await enqueueToDream(`${api}/update/one`, this.options(args));
     }
 }
 
