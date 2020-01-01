@@ -62,9 +62,9 @@ client.on('message', async (msg) => {
         return;
     }
 
-    let args = msg.content.match(/^\/ooc (.*)$/);
-    if (args) {
-        const args = {id: msg.author.id, message: args[1]};
+    let cmdArgs = msg.content.match(/^\/ooc (.*)$/);
+    if (cmdArgs) {
+        const args = {id: msg.author.id, message: cmdArgs[1]};
         const response = await dreamland.ooc(args);
         if (response)
             msg.reply(response);
