@@ -4,12 +4,23 @@ const Markup = require('telegraf/markup');
 const Extra = require('telegraf/extra');
 const DreamLand = require('../dreamland.js');
 const dreamland = new DreamLand('telegram');
+const commandArgsMiddleware = require('./commandArgs');
+
 
 // 'start' - standard bot command
 bot.start((ctx) => ctx.reply('Привет, я Хассан и я скоро поумнею. Набери /help для списка команд.'));
 
 // 'help' command, can be reworked to show action buttons
-bot.help((ctx) => ctx.reply('/who - показать кто в мире\n/cat - котики\n'));
+bot.help((ctx) => ctx.reply(
+    '/who                - показать кто в мире\n' + 
+    '/cat                - случайный котик\n' +
+    '/cat says/meow meow - кот с надписью\n' +
+    '/cat hat/says/hello - кот с тегом hat и надписью\n' +
+    '/cat gif            - анимированный кот\n' + 
+    'Подробности в https://cataas.com/#/about'
+));
+
+bot.use(commandArgsMiddleware());
 
 // 'who' command using DL API, anyone can call.
 bot.command('who', async (ctx) => {
@@ -17,12 +28,26 @@ bot.command('who', async (ctx) => {
     ctx.replyWithMarkdown(response);
 });
 
+bot.catch((err) => {
+    console.log(err);
+});
+
 // 'cat' command for my dear Tahi.
 const random = (min, max) => Math.floor(Math.random() * (max - min) + min);
+const encode = (args) => (typeof args === 'string') ? encodeURI(args.replace(/^\/?/, '/')) : '';
 bot.command('cat', (ctx) => {
-    const width = random(100, 600);
-    const height = random(200, 400);
-    ctx.replyWithPhoto('http://lorempixel.com/' + width + '/' + height + '/cats/');
+    const args = ctx.state.command.args;
+    const request = 'https://cataas.com/cat' + encode(args) + '?' + random(1, 1000); 
+    console.log('request', request);
+
+    try {
+        if (request.match(/\/gif/))
+            return ctx.replyWithDocument(request);
+        else
+            return ctx.replyWithPhoto(request);
+    } catch (e) {
+        return ctx.reply('Error: check your syntax at https://cataas.com/#/about');
+    }
 });
 
 
