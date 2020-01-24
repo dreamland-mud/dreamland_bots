@@ -5,6 +5,7 @@ const Extra = require('telegraf/extra');
 const DreamLand = require('../dreamland.js');
 const dreamland = new DreamLand('telegram');
 const commandArgsMiddleware = require('./commandArgs');
+const fetch = require('node-fetch');
 
 
 // 'start' - standard bot command
@@ -35,19 +36,22 @@ bot.catch((err) => {
 // 'cat' command for my dear Tahi.
 const random = (min, max) => Math.floor(Math.random() * (max - min) + min);
 const encode = (args) => (typeof args === 'string') ? encodeURI(args.replace(/^\/?/, '/')) : '';
-bot.command('cat', (ctx) => {
+bot.command('cat', async (ctx) => {
     const args = ctx.state.command.args;
     const request = 'https://cataas.com/cat' + encode(args) + '?' + random(1, 1000); 
-    console.log('request', request);
+    const response = await fetch(request);
 
-    try {
-        if (request.match(/\/gif/))
+    if (response.ok) {
+        if (response.headers.get('content-type') === 'image/gif')
             return ctx.replyWithDocument(request);
         else
             return ctx.replyWithPhoto(request);
-    } catch (e) {
-        return ctx.reply('Error: check your syntax at https://cataas.com/#/about');
     }
+
+    if (response.status === 404)
+        return ctx.reply('Неправильный запрос, читайте /help');
+
+    return ctx.reply('Какая-то ошибка, попробуйте позже.');
 });
 
 
