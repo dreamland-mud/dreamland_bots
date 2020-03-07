@@ -38,20 +38,23 @@ class DreamLand {
     async who() {
         const response = await enqueueToDream(`${api}/who`);
         const who = await response.json();
-        let result;
+        let result = '';
 
         if (who.total === 0) {
             result = 'В мире никого нет!';
         } else {
-            result = 
-                  '```\nСейчас в мире:\n\n'
+            if (who.people && who.people.length > 0)
+                result = '```\nСейчас в мире:\n\n'
+                       + who.people
+                           .map(p =>
+                                (p.name.ru || p.name.en) + ', ' + p.race.ru + (p.clan ? ', клан ' + p.clan.en : '')
+                           ).join('\n');
 
-                   + who.people
-                       .map(p =>
-                            (p.name.ru || p.name.en) + ', ' + p.race.ru + (p.clan ? ', клан ' + p.clan.en : '')
-                       ).join('\n')
+            if (who.discord && who.discord.length > 0)
+                result += 'Слышат каналы:\n\n'
+                          + who.discord.map(p => (p.name.ru || p.name.en)).join('\n');
 
-                   + '\n\nВсего игроков: ' + who.total + '.\n```';
+            result += '\n\nВсего игроков: ' + who.total + '.\n```';
         }
 
         return result;
