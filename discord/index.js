@@ -53,7 +53,7 @@ client.on('message', msg => {
 
 client.on('message', async (msg) => {
  
-    if (msg.channel.type === 'text' && !msg.channel.name.startsWith('dreamland'))
+    if (msg.channel.type === 'text' && !msg.channel.name.startsWith('дрим'))
         return;
 
     if (msg.content.match(/^\/who *$/)) {
