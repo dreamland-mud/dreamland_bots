@@ -19,7 +19,14 @@ To test the bot on your own Discord and DreamLand servers:
 
 * Compile and launch DreamLand MUD following [this instruction](https://github.com/dreamland-mud/dreamland_code/blob/master/README.en.md).
 
-* Generate random token for authentication with DreamLand API. Save it in two places:
+* Generate a shared secret for authentication with DreamLand API. For example, you can use `openssl` command to generate one:
+
+```bash
+$ openssl rand -hex 16
+bea26a2221fd8090ea38720fc445eca6
+```
+
+* Save shared secret in two places:
     * On MUD side, inside the `/path/to/runtime/var/misc/dreamland_bot.token` file, e.g. `echo owi49slslsl > var/misc/dreamland_bot.token`
     * On bot side, inside the `DREAMLAND_TOKEN` environment variable, e.g. `export DREAMLAND_TOKEN=owi49slslsl`
 
