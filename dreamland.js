@@ -43,16 +43,17 @@ class DreamLand {
         if (who.total === 0) {
             result = 'В мире никого нет!';
         } else {
+	    result = '```';
             if (who.people && who.people.length > 0)
-                result = '```\nСейчас в мире:\n\n'
+                result += '\nСейчас в мире:\n\n'
                        + who.people
                            .map(p =>
                                 (p.name.ru || p.name.en) + ', ' + p.race.ru + (p.clan ? ', клан ' + p.clan.en : '')
                            ).join('\n');
 
             if (who.discord && who.discord.length > 0)
-                result += 'Слышат каналы:\n\n'
-                          + who.discord.map(p => (p.name.ru || p.name.en)).join('\n');
+                result += '\n\nСлышат каналы: '
+                          + who.discord.map(p => (p.name.ru || p.name.en)).join(', ');
 
             result += '\n\nВсего игроков: ' + who.total + '.\n```';
         }
