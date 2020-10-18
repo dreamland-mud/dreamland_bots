@@ -9,8 +9,8 @@ const myGuild = '464761427710705664';
 client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}!`);
 
-    const guild = client.guilds.get(myGuild);
-    const members = guild.members
+    const guild = client.guilds.cache.get(myGuild);
+    const members = guild.members.cache
         .filter(m => !m.user.bot)
         .filter(m => m.presence.status !== 'offline')
         .map(m => ({
@@ -25,6 +25,9 @@ client.on('ready', () => {
 });
 
 client.on("presenceUpdate", (oldMember, newMember) => {
+    if (!oldMember || !oldMember.guild)	
+	return;
+
     if (oldMember.guild.id !== myGuild)
         return;
 
@@ -34,12 +37,15 @@ client.on("presenceUpdate", (oldMember, newMember) => {
     const id = oldMember.user.id;
     const username = oldMember.user.username;
     const oldPresence = oldMember.frozenPresence;
-    const newPresence = newMember.guild.presences.get(id);
+    const newPresence = newMember.guild.presences.cache.get(id);
         
-    if (oldPresence.status === newPresence.status)
+    if (oldPresence && oldPresence.status === newPresence.status)
         return;
 
-    console.log(`${username}'s ${id} presence changes from ${oldPresence.status} to ${newPresence.status}`);
+    if (oldPresence)	
+        console.log(`${username}'s ${id} presence changes from ${oldPresence.status} to ${newPresence.status}`);
+    else	
+        console.log(`${username}'s ${id} presence changes to ${newPresence.status}`);
 
     const player = { id, username, status: newPresence.status };
     dreamland.updateOne(player);
@@ -89,5 +95,7 @@ client.on('message', async (msg) => {
     }
 });
 
+console.log('Trying to login with ', auth.token);
+client.on('debug', m => console.log(m));
 client.login(auth.token);
 
