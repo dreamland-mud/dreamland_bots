@@ -35,7 +35,8 @@ bot.catch((err) => {
 
 // 'cat' command for my dear Tahi.
 const random = (min, max) => Math.floor(Math.random() * (max - min) + min);
-const encode = (args) => (typeof args === 'string') ? encodeURI(args.replace(/^\/?/, '/')) : '';
+const replacer = (match, p1, p2) => { if(p1) return p1; if(p2) return '%3F'; };
+const encode = (args) => (typeof args === 'string') ? encodeURI(args.replace(/^\/?/, '/').replace(/(\?\w*=\w*)|(\?)/g, replacer)) : '';
 bot.command('cat', async (ctx) => {
     const args = ctx.state.command.args;
     const request = 'https://cataas.com/cat' + encode(args) + '?' + random(1, 1000); 
