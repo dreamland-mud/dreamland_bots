@@ -19,7 +19,6 @@ client.on('ready', () => {
             status: m.presence.status
         }));
 
-    console.log(guild.name, 'online members:', members);
 
     dreamland.updateAll(members);
 });
@@ -41,11 +40,6 @@ client.on("presenceUpdate", (oldMember, newMember) => {
         
     if (oldPresence && oldPresence.status === newPresence.status)
         return;
-
-    if (oldPresence)	
-        console.log(`${username}'s ${id} presence changes from ${oldPresence.status} to ${newPresence.status}`);
-    else	
-        console.log(`${username}'s ${id} presence changes to ${newPresence.status}`);
 
     const player = { id, username, status: newPresence.status };
     dreamland.updateOne(player);
@@ -95,7 +89,5 @@ client.on('message', async (msg) => {
     }
 });
 
-console.log('Trying to login with ', auth.token);
-client.on('debug', m => console.log(m));
 client.login(auth.token);
 

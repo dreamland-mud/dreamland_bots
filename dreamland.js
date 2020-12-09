@@ -7,9 +7,7 @@ const enqueueToDream = (url, options={}) => {
     const chain = async (prev) => {
         try {
             await prev;
-            console.log('Calling', url, 'options', options);
             const response = await fetch(url, options);
-            console.log('DreamLand response', response.status, response.statusText);
             return response;
 
         } catch (error) {
