@@ -44,7 +44,7 @@ bot.catch((err) => {
 // 'cat' command for my dear Tahi.
 const parser = (str, numb) => {
     let result = '';
-    let matches = str.match(/^\/(?:(?<tag>\w*)(?:\/))?((?:says\/)(?<says>[^?]*))?(?:\?(?<options>.*))?$/);
+    let matches = str.match(/^\/(?:(?<tag>\w*)(?:\/)?)?((?:says\/)(?<says>[^?]*))?(?:\?(?<options>.*))?$/);
 
     if(!matches) return result + "?" + numb;
 
@@ -55,7 +55,7 @@ const parser = (str, numb) => {
     if(matches['groups']['options']) {
         let option;
         option = matches['groups']['options'].match(/(?:s(?:ize)=([\d]+))/);
-        if(option) result += "&ssize=" + option[1];
+        if(option) result += "&size=" + option[1];
         option = matches['groups']['options'].match(/(?:c(?:olor)=([\w]+))/);
         if(option) result += "&color=" + option[1];
         option = matches['groups']['options'].match(/(?:t(?:ype)=(sm(all)?|m(e)?d(ium)?|sq(uare)?|or(iginal)?))/);
