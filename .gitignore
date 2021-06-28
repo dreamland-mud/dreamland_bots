@@ -1,5 +1,8 @@
 __pycache__
 
+#IDE specific files
+.idea/
+
 # Logs
 logs
 *.log
