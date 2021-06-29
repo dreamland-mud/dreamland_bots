@@ -1,5 +1,7 @@
 __pycache__
 
+./idea
+
 # Logs
 logs
 *.log
