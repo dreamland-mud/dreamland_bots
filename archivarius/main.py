@@ -49,7 +49,7 @@ async def allmsg(message: types.Message):
     elif user_data.startswith('?'):
         url = dl.endpoint('skill')
         new_user_data = user_data.replace('?', '')
-        response = requests.get(url, data=dl.desc(user_data))
+        response = requests.get(url, data=dl.desc(new_user_data))
         await bot.send_message(message.chat.id, response.json())
     else:
         pass
