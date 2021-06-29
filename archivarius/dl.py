@@ -15,7 +15,7 @@ def payload(author, msg):
 
 def desc(text):
     param_dict = {'args': {'message': text}}
-    return requests.request(param_dict)
+    return json.dumps(param_dict)
 
 
 def command(text):
