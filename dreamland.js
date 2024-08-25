@@ -77,7 +77,7 @@ class DreamLand {
 
     if (response.ok && !whoisData.error) {
       const name = whoisData.name?.ru || whoisData.name?.en || playerName;
-      const race = whoisData.race || 'Неизвестно';
+      const race = whoisData.race || 'Невідомо';
       const clan = whoisData.clan ? whoisData.clan.name : 'Нет';
       const remorts = whoisData.remorts || '0';
       const title = whoisData.clan?.title
