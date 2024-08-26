@@ -4,7 +4,7 @@ const auth = require('./auth.json')
 const DreamLand = require('../dreamland.js')
 const dreamland = new DreamLand('discord')
 
-const myGuild = '464761427710705664';
+const myGuild = '969942531980808243';
 
 client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}!`);
