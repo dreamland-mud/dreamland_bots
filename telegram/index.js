@@ -10,31 +10,81 @@ const fetch = require('node-fetch');
 // 'start' - standard bot command
 bot.start(ctx =>
   ctx.reply(
-    'Привет, я Хассан и я скоро поумнею. Набери /help для списка команд.'
+    'Привіт, я Хасан і я скоро порозумнішаю. Набери /help для списку команд.'
   )
 );
 
 // 'help' command, can be reworked to show action buttons
 bot.help(ctx =>
   ctx.reply(
-    '/who                - показать кто в мире\n' +
-      '/cat                - случайный котик\n' +
-      '/cat says/meow meow - кот с надписью\n' +
-      '/cat hat/says/hello - кот с тегом hat и надписью\n' +
-      '/cat gif            - анимированный кот\n' +
-      '/cat says/hello?color=orange  - кот с надписью оранжевым цветом\n' +
-      '/cat says/aloha?color=red&filter=sepia  - кот с надписью красным цветом в сепии\n' +
-      '   доступны опции:\n' +
-      '   color - цвет текста;\n' +
-      '   size - размер шрифта;\n' +
+    '/who                - показати хто в світі\n' +
+      '/who [імʼя]         - інформація про конкретного гравця\n' +
+      '/bug               - відправити баг-репорт\n' +
+      '/typo              - повідомити про друкарську помилку\n' +
+      '/idea              - відправити ідею\n' +
+      '/nohelp            - повідомити про відсутність розділу допомоги\n' +
+      '/cat               - випадковий котик\n' +
+      '/cat says/meow meow - кіт з написом\n' +
+      '/cat hat/says/hello - кіт з тегом hat і написом\n' +
+      '/cat gif           - анімований кіт\n' +
+      '/cat says/hello?color=orange  - кіт з написом помаранчевим кольором\n' +
+      '/cat says/aloha?color=red&filter=sepia  - кіт з написом червоним кольором в сепії\n' +
+      '   доступні опції:\n' +
+      '   color - колір тексту;\n' +
+      '   size - розмір шрифту;\n' +
       '   type - тип картинки (small, medium, square, original);\n' +
-      '   filter - фильтр (blur,mono,sepia,negative,paint,pixel);\n' +
-      '   width|height - ширина или высота картинки в пикселях;\n' +
-      'Подробности в https://cataas.com/'
+      '   filter - фільтр (blur,mono,sepia,negative,paint,pixel);\n' +
+      '   width|height - ширина або висота картинки в пікселях;\n' +
+      'Деталі на https://cataas.com/'
   )
 );
 
 bot.use(commandArgsMiddleware());
+
+bot.command('bug', async ctx => {
+  await handleReportCommand(ctx, 'bug');
+});
+
+bot.command('typo', async ctx => {
+  await handleReportCommand(ctx, 'typo');
+});
+
+bot.command('idea', async ctx => {
+  await handleReportCommand(ctx, 'idea');
+});
+
+bot.command('nohelp', async ctx => {
+  await handleReportCommand(ctx, 'nohelp');
+});
+
+async function handleReportCommand(ctx, type) {
+  const args = ctx.state.command.args;
+
+  if (!args || typeof args !== 'string' || args.trim() === '') {
+    return ctx.reply(
+      `Будь ласка, вкажіть опис після команди /${ctx.state.command.command}.`
+    );
+  }
+
+  const userId = ctx.from.username
+    ? `@${ctx.from.username}`
+    : ctx.from.first_name;
+
+  const reportData = {
+    id: userId,
+    message: args,
+  };
+
+  try {
+    const response = await dreamland.sendReport(type, reportData);
+    ctx.replyWithMarkdown(response);
+  } catch (error) {
+    console.error('Помилка під час надсилання повідомлення:', error);
+    ctx.reply(
+      'Сталася помилка під час надсилання повідомлення. Спробуйте пізніше.'
+    );
+  }
+}
 
 bot.command('who', async ctx => {
   const args = { message: ctx.state.command.args };
@@ -61,7 +111,7 @@ bot.catch(err => {
   console.log(err);
 });
 
-// 'cat' command for my dear Tahi.
+// 'cat'   command for my dear Tahi.
 const parser = (str, numb) => {
   let result = '';
   let matches = str.match(
@@ -120,9 +170,9 @@ bot.command('cat', async ctx => {
   }
 
   if (response.status === 404)
-    return ctx.reply('Неправильный запрос, читайте /help');
+    return ctx.reply('Неправильний запит читайте /help');
 
-  return ctx.reply('Какая-то ошибка, попробуйте позже.');
+  return ctx.reply('Якась помилка, спробуйте пізніше.');
 });
 
 bot.launch();
