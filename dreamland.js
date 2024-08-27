@@ -22,6 +22,12 @@ class DreamLand {
   constructor(bottype) {
     this.bottype = bottype;
     this.token = process.env.DREAMLAND_TOKEN;
+    this.types = {
+      bug: { url: '/bug', title: '_Баг-репорт:_\n\n' },
+      typo: { url: '/typo', title: '_Друкарська помилка:_\n\n' },
+      idea: { url: '/idea', title: '_Ідея:_\n\n' },
+      nohelp: { url: '/nohelp', title: '_Відсутність розділу довідки:_\n\n' },
+    };
   }
 
   body(args) {
@@ -32,6 +38,31 @@ class DreamLand {
     return { method: 'POST', body: JSON.stringify(this.body(args)) };
   }
 
+  async sendReport(type, args) {
+    const escapeMarkdown = text => {
+      return text.replace(/([_*[\]()~`>#+\-=|{}.!])/g, '\\$1');
+    };
+
+    const { url, title } = this.types[type];
+    const response = await enqueueToDream(`${api}${url}`, this.options(args));
+
+    let result;
+
+    if (response.ok) {
+      const { id, message } = args;
+
+      result =
+        `${title}` +
+        `*Відправник:* ${escapeMarkdown(id)}\n` +
+        `*Текст:* ${escapeMarkdown(message)}\n\n` +
+        `${title.trim()} успішно надіслано.`;
+    } else {
+      result = `Цей користувач Telegram не повʼязан з жодним персонажем. Використовуй *'режим телеграм'* у грі.`;
+    }
+
+    return result;
+  }
+
   async who() {
     const args = { message: '' };
     const response = await enqueueToDream(`${api}/who`, this.options(args));
@@ -40,12 +71,12 @@ class DreamLand {
     let result = '';
 
     if (who.total === 0) {
-      result = 'В мире никого нет!';
+      result = 'У світі нікого немає!';
     } else {
       result = '```';
       if (who.people && who.people.length > 0)
         result +=
-          '\nСейчас в мире:\n\n' +
+          '\nЗараз у світі:\n\n' +
           who.people
             .map(
               p =>
@@ -58,10 +89,10 @@ class DreamLand {
 
       if (who.discord && who.discord.length > 0)
         result +=
-          '\n\nСлышат каналы: ' +
+          '\n\nЧують канали: ' +
           who.discord.map(p => p.name.ru || p.name.en).join(', ');
 
-      result += '\n\nВсего игроков: ' + who.total + '.\n```';
+      result += '\n\nУсього гравців: ' + who.total + '.\n```';
     }
 
     return result;
@@ -109,10 +140,10 @@ class DreamLand {
     if (response.ok) result = undefined;
     else if (response.status === 404)
       result =
-        'Ты не присоединен ни к одному персонажу. Зайди в DreamLand и набери config ' +
+        'Ти не приєднаний до жодного персонажа. Зайди в DreamLand і набери config' +
         this.bottype +
         '.';
-    else result = 'Произошла ошибка, попробуй позже.';
+    else result = 'Відбулася помилка, спробуй пізніше.';
 
     return result;
   }
@@ -121,13 +152,13 @@ class DreamLand {
     const response = await enqueueToDream(`${api}/link`, this.options(args));
     let result;
 
-    if (response.ok) result = 'Успешно присоединен к персонажу.';
+    if (response.ok) result = 'Успішно приєднано до персонажа.';
     else if (response.status === 404)
       result =
-        'Персонажа с таким секретным словом не существует. Зайди в DreamLand и набери config ' +
+        'Персонажу з таким секретним словом немає. Зайди в DreamLand і набери config' +
         this.bottype +
         '.';
-    else result = 'Произошла ошибка, попробуй позже.';
+    else result = 'Відбулася помилка, спробуй пізніше.';
 
     return result;
   }
