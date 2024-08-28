@@ -25,7 +25,7 @@ bot.command('help', async ctx => {
     args = command.args.trim();
   }
 
-  if (args && !isNaN(args)) {
+  if (args && /^\d+$/.test(args)) {
     const helpId = args;
     const helpUrl = `https://dreamland.rocks/help/${helpId}.html`;
 
@@ -45,25 +45,7 @@ bot.command('help', async ctx => {
     }
   } else {
     ctx.reply(
-      '/who                - показати хто в світі\n' +
-        '/who [імʼя]         - інформація про конкретного гравця\n' +
-        '/bug               - відправити баг-репорт\n' +
-        '/typo              - повідомити про друкарську помилку\n' +
-        '/idea              - відправити ідею\n' +
-        '/nohelp            - повідомити про відсутність розділу допомоги\n' +
-        '/cat               - випадковий котик\n' +
-        '/cat says/meow meow - кіт з написом\n' +
-        '/cat hat/says/hello - кіт з тегом hat і написом\n' +
-        '/cat gif           - анімований кіт\n' +
-        '/cat says/hello?color=orange  - кіт з написом помаранчевим кольором\n' +
-        '/cat says/aloha?color=red&filter=sepia  - кіт з написом червоним кольором в сепії\n' +
-        '   доступні опції:\n' +
-        '   color - колір тексту;\n' +
-        '   size - розмір шрифту;\n' +
-        '   type - тип картинки (small, medium, square, original);\n' +
-        '   filter - фільтр (blur,mono,sepia,negative,paint,pixel);\n' +
-        '   width|height - ширина або висота картинки в пікселях;\n' +
-        'Деталі на https://cataas.com/'
+      'Будь ласка, введіть коректний номер довідки (тільки цифри, без пробілів та спеціальних символів).'
     );
   }
 });
