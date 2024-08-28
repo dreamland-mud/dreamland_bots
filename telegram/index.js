@@ -14,30 +14,54 @@ bot.start(ctx =>
   )
 );
 
-// 'help' command, can be reworked to show action buttons
-bot.help(ctx =>
-  ctx.reply(
-    '/who                - показати хто в світі\n' +
-      '/who [імʼя]         - інформація про конкретного гравця\n' +
-      '/bug               - відправити баг-репорт\n' +
-      '/typo              - повідомити про друкарську помилку\n' +
-      '/idea              - відправити ідею\n' +
-      '/nohelp            - повідомити про відсутність розділу допомоги\n' +
-      '/cat               - випадковий котик\n' +
-      '/cat says/meow meow - кіт з написом\n' +
-      '/cat hat/says/hello - кіт з тегом hat і написом\n' +
-      '/cat gif           - анімований кіт\n' +
-      '/cat says/hello?color=orange  - кіт з написом помаранчевим кольором\n' +
-      '/cat says/aloha?color=red&filter=sepia  - кіт з написом червоним кольором в сепії\n' +
-      '   доступні опції:\n' +
-      '   color - колір тексту;\n' +
-      '   size - розмір шрифту;\n' +
-      '   type - тип картинки (small, medium, square, original);\n' +
-      '   filter - фільтр (blur,mono,sepia,negative,paint,pixel);\n' +
-      '   width|height - ширина або висота картинки в пікселях;\n' +
-      'Деталі на https://cataas.com/'
-  )
-);
+bot.use(commandArgsMiddleware());
+
+// 'help' command that combines both listing and custom functionality
+bot.command('help', async ctx => {
+  const command = ctx.state.command;
+  let args = '';
+
+  if (command && typeof command.args === 'string') {
+    args = command.args.trim();
+  }
+
+  if (args && !isNaN(args)) {
+    const helpId = args;
+
+    const helpUrl = `https://dreamland.rocks//help/${helpId}.html`;
+
+    try {
+      await ctx.replyWithMarkdown(`[Справка # ${helpId}](${helpUrl})`);
+    } catch (error) {
+      console.error('Помилка під час виконання команди /help:', error);
+      ctx.reply(
+        'Сталася помилка під час генерації посилання. Будь ласка, спробуйте пізніше.'
+      );
+    }
+  } else {
+    ctx.reply(
+      '/who                - показати хто в світі\n' +
+        '/who [імʼя]         - інформація про конкретного гравця\n' +
+        '/bug               - відправити баг-репорт\n' +
+        '/typo              - повідомити про друкарську помилку\n' +
+        '/idea              - відправити ідею\n' +
+        '/nohelp            - повідомити про відсутність розділу допомоги\n' +
+        '/cat               - випадковий котик\n' +
+        '/cat says/meow meow - кіт з написом\n' +
+        '/cat hat/says/hello - кіт з тегом hat і написом\n' +
+        '/cat gif           - анімований кіт\n' +
+        '/cat says/hello?color=orange  - кіт з написом помаранчевим кольором\n' +
+        '/cat says/aloha?color=red&filter=sepia  - кіт з написом червоним кольором в сепії\n' +
+        '   доступні опції:\n' +
+        '   color - колір тексту;\n' +
+        '   size - розмір шрифту;\n' +
+        '   type - тип картинки (small, medium, square, original);\n' +
+        '   filter - фільтр (blur,mono,sepia,negative,paint,pixel);\n' +
+        '   width|height - ширина або висота картинки в пікселях;\n' +
+        'Деталі на https://cataas.com/'
+    );
+  }
+});
 
 bot.use(commandArgsMiddleware());
 
@@ -107,11 +131,13 @@ bot.command('who', async ctx => {
   }
 });
 
+console.log('Bot is starting...');
+
 bot.catch(err => {
-  console.log(err);
+  console.log('Bot encountered an error:', err);
 });
 
-// 'cat'   command for my dear Tahi.
+// 'cat' command for generating cat images
 const parser = (str, numb) => {
   let result = '';
   let matches = str.match(
@@ -145,11 +171,14 @@ const parser = (str, numb) => {
   }
   return result;
 };
+
 const random = (min, max) => Math.floor(Math.random() * (max - min) + min);
+
 const replacer = (match, p1, p2) => {
   if (p1) return p1;
   if (p2) return '%3F';
 };
+
 const encode = args =>
   typeof args === 'string'
     ? encodeURI(args.replace(/^\/?/, '/')).replace(
@@ -157,6 +186,7 @@ const encode = args =>
         replacer
       )
     : '';
+
 bot.command('cat', async ctx => {
   const args = ctx.state.command.args;
   const request =
@@ -173,6 +203,11 @@ bot.command('cat', async ctx => {
     return ctx.reply('Неправильний запит читайте /help');
 
   return ctx.reply('Якась помилка, спробуйте пізніше.');
+});
+
+bot.use((ctx, next) => {
+  console.log('Middleware triggered');
+  return next();
 });
 
 bot.launch();
