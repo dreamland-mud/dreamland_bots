@@ -27,11 +27,16 @@ bot.command('help', async ctx => {
 
   if (args && !isNaN(args)) {
     const helpId = args;
-
-    const helpUrl = `https://dreamland.rocks//help/${helpId}.html`;
+    const helpUrl = `https://dreamland.rocks/help/${helpId}.html`;
 
     try {
-      await ctx.replyWithMarkdown(`[Справка # ${helpId}](${helpUrl})`);
+      const response = await fetch(helpUrl);
+
+      if (response.ok) {
+        await ctx.replyWithMarkdown(`[Справка # ${helpId}](${helpUrl})`);
+      } else if (response.status === 404) {
+        ctx.reply(`Довідка з номером #${helpId} не знайдена.`);
+      }
     } catch (error) {
       console.error('Помилка під час виконання команди /help:', error);
       ctx.reply(
@@ -42,7 +47,6 @@ bot.command('help', async ctx => {
     ctx.reply(
       '/who                - показати хто в світі\n' +
         '/who [імʼя]         - інформація про конкретного гравця\n' +
-        '/help [id]          - отримати посилання на довідку з вказаним ідентифікатором\n' +
         '/bug               - відправити баг-репорт\n' +
         '/typo              - повідомити про друкарську помилку\n' +
         '/idea              - відправити ідею\n' +
