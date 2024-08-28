@@ -25,17 +25,28 @@ bot.command('help', async ctx => {
     args = command.args.trim();
   }
 
-  if (args && !isNaN(args)) {
-    const helpId = args;
+  if (args) {
+    if (/^\d+$/.test(args)) {
+      const helpId = args;
+      const helpUrl = `https://dreamland.rocks/help/${helpId}.html`;
 
-    const helpUrl = `https://dreamland.rocks//help/${helpId}.html`;
+      try {
+        const response = await fetch(helpUrl);
 
-    try {
-      await ctx.replyWithMarkdown(`[Справка # ${helpId}](${helpUrl})`);
-    } catch (error) {
-      console.error('Помилка під час виконання команди /help:', error);
+        if (response.ok) {
+          await ctx.replyWithMarkdown(`[Справка # ${helpId}](${helpUrl})`);
+        } else if (response.status === 404) {
+          ctx.reply(`Довідка з номером #${helpId} не знайдена.`);
+        }
+      } catch (error) {
+        console.error('Помилка під час виконання команди /help:', error);
+        ctx.reply(
+          'Сталася помилка під час генерації посилання. Будь ласка, спробуйте пізніше.'
+        );
+      }
+    } else {
       ctx.reply(
-        'Сталася помилка під час генерації посилання. Будь ласка, спробуйте пізніше.'
+        'Будь ласка, введіть коректний номер довідки (тільки цифри, без пробілів та спеціальних символів).'
       );
     }
   } else {
