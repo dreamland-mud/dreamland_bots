@@ -25,27 +25,51 @@ bot.command('help', async ctx => {
     args = command.args.trim();
   }
 
-  if (args && /^\d+$/.test(args)) {
-    const helpId = args;
-    const helpUrl = `https://dreamland.rocks/help/${helpId}.html`;
+  if (args) {
+    if (/^\d+$/.test(args)) {
+      const helpId = args;
+      const helpUrl = `https://dreamland.rocks/help/${helpId}.html`;
 
-    try {
-      const response = await fetch(helpUrl);
+      try {
+        const response = await fetch(helpUrl);
 
-      if (response.ok) {
-        await ctx.replyWithMarkdown(`[Справка # ${helpId}](${helpUrl})`);
-      } else if (response.status === 404) {
-        ctx.reply(`Довідка з номером #${helpId} не знайдена.`);
+        if (response.ok) {
+          await ctx.replyWithMarkdown(`[Справка # ${helpId}](${helpUrl})`);
+        } else if (response.status === 404) {
+          ctx.reply(`Довідка з номером #${helpId} не знайдена.`);
+        }
+      } catch (error) {
+        console.error('Помилка під час виконання команди /help:', error);
+        ctx.reply(
+          'Сталася помилка під час генерації посилання. Будь ласка, спробуйте пізніше.'
+        );
       }
-    } catch (error) {
-      console.error('Помилка під час виконання команди /help:', error);
+    } else {
       ctx.reply(
-        'Сталася помилка під час генерації посилання. Будь ласка, спробуйте пізніше.'
+        'Будь ласка, введіть коректний номер довідки (тільки цифри, без пробілів та спеціальних символів).'
       );
     }
   } else {
     ctx.reply(
-      'Будь ласка, введіть коректний номер довідки (тільки цифри, без пробілів та спеціальних символів).'
+      '/who                - показати хто в світі\n' +
+        '/who [імʼя]         - інформація про конкретного гравця\n' +
+        '/bug               - відправити баг-репорт\n' +
+        '/typo              - повідомити про друкарську помилку\n' +
+        '/idea              - відправити ідею\n' +
+        '/nohelp            - повідомити про відсутність розділу допомоги\n' +
+        '/cat               - випадковий котик\n' +
+        '/cat says/meow meow - кіт з написом\n' +
+        '/cat hat/says/hello - кіт з тегом hat і написом\n' +
+        '/cat gif           - анімований кіт\n' +
+        '/cat says/hello?color=orange  - кіт з написом помаранчевим кольором\n' +
+        '/cat says/aloha?color=red&filter=sepia  - кіт з написом червоним кольором в сепії\n' +
+        '   доступні опції:\n' +
+        '   color - колір тексту;\n' +
+        '   size - розмір шрифту;\n' +
+        '   type - тип картинки (small, medium, square, original);\n' +
+        '   filter - фільтр (blur,mono,sepia,negative,paint,pixel);\n' +
+        '   width|height - ширина або висота картинки в пікселях;\n' +
+        'Деталі на https://cataas.com/'
     );
   }
 });
