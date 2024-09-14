@@ -1,4 +1,10 @@
 const fetch = require('node-fetch');
+const {
+  cleanMessage,
+  wrapInCodeBlock,
+  escapeMarkdown,
+} = require('./telegram/utils');
+
 const api = 'https://dreamland.rocks/api';
 
 let toDream = Promise.resolve();
@@ -39,22 +45,22 @@ class DreamLand {
   }
 
   async sendReport(type, args) {
-    const escapeMarkdown = text => {
-      return text.replace(/([_*[\]()~`>#+\-=|{}.!])/g, '\\$1');
-    };
-
     const { url, title } = this.types[type];
+
+    const cleanedMessage = cleanMessage(args.message);
+    const wrappedMessage = wrapInCodeBlock(cleanedMessage);
+
     const response = await enqueueToDream(`${api}${url}`, this.options(args));
 
     let result;
 
     if (response.ok) {
-      const { id, message } = args;
+      const { id } = args;
 
       result =
         `${title}` +
         `*Відправник:* ${escapeMarkdown(id)}\n` +
-        `*Текст:* ${escapeMarkdown(message)}\n\n` +
+        `${wrappedMessage}` +
         `${title.trim()} успішно надіслано.`;
     } else {
       result = `Цей користувач Telegram не повʼязан з жодним персонажем. Використовуй *'режим телеграм'* у грі.`;
@@ -73,7 +79,6 @@ class DreamLand {
     if (who.total === 0) {
       result = 'У світі нікого немає!';
     } else {
-      result = '```';
       if (who.people && who.people.length > 0)
         result +=
           '\nЗараз у світі:\n\n' +
@@ -92,10 +97,10 @@ class DreamLand {
           '\n\nЧують канали: ' +
           who.discord.map(p => p.name.ru || p.name.en).join(', ');
 
-      result += '\n\nУсього гравців: ' + who.total + '.\n```';
+      result += '\n\nУсього гравців: ' + who.total + '.';
     }
 
-    return result;
+    return wrapInCodeBlock(result);
   }
 
   async whois(playerName) {
@@ -112,25 +117,25 @@ class DreamLand {
       const clan = whoisData.clan ? whoisData.clan.name : 'Нет';
       const remorts = whoisData.remorts || '0';
       const title = whoisData.clan?.title
-        ? `*Титул у клані:* ${whoisData.clan.title}\n`
+        ? `Титул у клані: ${whoisData.clan.title}\n`
         : '';
       const capitalizedPlayerName =
         name.charAt(0).toUpperCase() + name.slice(1);
 
       result =
-        `*Інформація про гравця:*\n\n` +
-        `*Ім'я:* ${capitalizedPlayerName}\n` +
-        `*Раса:* ${race}\n` +
-        `*Клан:* ${clan}\n` +
+        `Інформація про гравця:\n\n` +
+        `Ім'я: ${capitalizedPlayerName}\n` +
+        `Раса: ${race}\n` +
+        `Клан: ${clan}\n` +
         title +
-        `*Кількість перероджень:* ${remorts}`;
+        `Кількість перероджень: ${remorts}`;
     } else if (whoisData.error === 'player not found') {
       result = `Персонаж із таким ім'ям не знайдений`;
     } else {
       result = 'Сталася помилка, спробуйте пізніше.';
     }
 
-    return result;
+    return wrapInCodeBlock(result);
   }
 
   async ooc(args) {
