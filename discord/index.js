@@ -87,6 +87,16 @@ client.on('message', async (msg) => {
         msg.reply(response);
         return;
     }
+
+    if (msg.content.match(/^\/(reboot|deny|ban)/)) {
+        const response = await dreamland.admin({
+            id: msg.author.id,
+            username: msg.author.username, 
+            command: msg.content.substring(1)
+        });
+        msg.reply(response);
+        return;
+    }
 });
 
 client.login(auth.token);

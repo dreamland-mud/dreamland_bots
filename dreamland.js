@@ -6,6 +6,7 @@ const {
 } = require('./telegram/utils');
 
 const api = 'https://dreamland.rocks/api';
+//const api = 'http://localhost:1235';
 
 let toDream = Promise.resolve();
 
@@ -166,6 +167,15 @@ class DreamLand {
     else result = 'Відбулася помилка, спробуй пізніше.';
 
     return result;
+  }
+
+  async admin(args) {
+    const response = await enqueueToDream(`${api}/admin`, this.options(args));
+    if (!response.ok)
+      return response.statusText;
+
+    const commandResult = await response.json();
+    return wrapInCodeBlock(commandResult.message);
   }
 
   async updateAll(args) {
