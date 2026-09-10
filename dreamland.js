@@ -178,6 +178,86 @@ class DreamLand {
     return wrapInCodeBlock(commandResult.message);
   }
 
+  // --- passwordless account layer (Phase 3, Trello 2zFpQBoW / ACCOUNTS_NANNY_ROADMAP.md) ---
+  // These hit /account/{redeem,info,resetpw}. They ship dark: while in-game minting
+  // is gated off no live codes exist, so redeem always reports an invalid code and
+  // no account is created. Returned strings are user-facing (UA), like link()/who().
+
+  // Redeem a DL-XXXXX code minted in-game against this messenger identity.
+  // args: { code, identityType: 'telegram'|'discord', value: <numeric id>, display? }
+  async redeem(args) {
+    const response = await enqueueToDream(`${api}/account/redeem`, this.options(args));
+    if (!response) return 'DreamLand не відповідає, спробуй пізніше.';
+
+    if (response.ok) {
+      const data = await response.json().catch(() => ({}));
+      const char = data.char || 'персонаж';
+      return data.created
+        ? `Акаунт створено, персонаж ${char} привʼязаний. Тепер усі твої персонажі під одним дахом.`
+        : `Персонаж ${char} привʼязаний до твого акаунта.`;
+    }
+
+    const reason = await response.text().catch(() => '');
+    if (response.status === 400 && /another account/i.test(reason))
+      return 'Цей персонаж уже привʼязаний до іншого акаунта.';
+    if (response.status === 400)
+      return 'Код невірний або протермінований. У грі набери «аккаунт связать» і спробуй свіжий код (він живе 10 хвилин).';
+    if (response.status === 404)
+      return 'Персонаж не знайдений — його видалили чи перейменували після того, як ти отримав код?';
+    return 'Сталася помилка, спробуй пізніше.';
+  }
+
+  // Show the account behind this identity: attached characters + login methods.
+  // args: { identityType, value }
+  async accountInfo(args) {
+    const response = await enqueueToDream(`${api}/account/info`, this.options(args));
+    if (!response) return 'DreamLand не відповідає, спробуй пізніше.';
+
+    if (response.status === 404)
+      return 'До цієї адреси ще не привʼязано жодного акаунта. Отримай код у грі командою «аккаунт связать».';
+    if (!response.ok) return 'Сталася помилка, спробуй пізніше.';
+
+    const data = await response.json().catch(() => ({}));
+    const chars =
+      data.chars && data.chars.length ? data.chars.join(', ') : 'поки жодного';
+    const methods =
+      data.identities && data.identities.length
+        ? data.identities.map(i => i.type).join(', ')
+        : '—';
+
+    return wrapInCodeBlock(
+      `Акаунт: ${data.account}\n` +
+        `Персонажі: ${chars}\n` +
+        `Способи входу: ${methods}`
+    );
+  }
+
+  // Reset one character's password to a fresh temporary one (forced change on next
+  // login). The temp password is a SECRET -- callers MUST deliver it privately.
+  // args: { identityType, value, char }
+  async resetpw(args) {
+    const response = await enqueueToDream(`${api}/account/resetpw`, this.options(args));
+    if (!response) return 'DreamLand не відповідає, спробуй пізніше.';
+
+    if (response.ok) {
+      const data = await response.json().catch(() => ({}));
+      return (
+        `Тимчасовий пароль для ${data.char}: ${data.password}\n` +
+        'Зайди в гру цим паролем — гра одразу попросить задати новий.'
+      );
+    }
+
+    const reason = await response.text().catch(() => '');
+    if (response.status === 400 && /not on this account/i.test(reason))
+      return 'Цей персонаж не на твоєму акаунті.';
+    if (response.status === 400)
+      return 'Імʼя персонажа — тільки латиницею (це логін-імʼя).';
+    if (response.status === 404 && /no account/i.test(reason))
+      return 'У тебе ще нема акаунта. Спершу привʼяжи персонажа: у грі «аккаунт связать», потім /attach тут.';
+    if (response.status === 404) return 'Персонаж не знайдений.';
+    return 'Сталася помилка, спробуй пізніше.';
+  }
+
   async updateAll(args) {
     await enqueueToDream(`${api}/update/all`, this.options(args));
   }
