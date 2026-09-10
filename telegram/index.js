@@ -7,12 +7,31 @@ const dreamland = new DreamLand('telegram');
 const commandArgsMiddleware = require('./commandArgs');
 const fetch = require('node-fetch');
 
-// 'start' - standard bot command
-bot.start(ctx =>
-  ctx.reply(
+// 'start' - standard bot command. A t.me/<bot>?start=DL-XXXXX deep link arrives
+// as "/start DL-XXXXX" -- one tap redeems the account linking code. Parse the
+// payload straight off the message text: bot.start is registered before the
+// commandArgs middleware, so ctx.state.command is not set here yet.
+bot.start(async ctx => {
+  const text = (ctx.message && ctx.message.text) || '';
+  const payload = text.split(/\s+/)[1] || '';
+
+  if (/^DL-/i.test(payload)) {
+    const display = ctx.from.username
+      ? '@' + ctx.from.username
+      : ctx.from.first_name;
+    const result = await dreamland.redeem({
+      code: payload,
+      identityType: 'telegram',
+      value: String(ctx.from.id),
+      display,
+    });
+    return ctx.reply(result);
+  }
+
+  return ctx.reply(
     'Привіт, я Хасан і я скоро порозумнішаю. Набери /help для списку команд.'
-  )
-);
+  );
+});
 
 bot.use(commandArgsMiddleware());
 
@@ -58,6 +77,9 @@ bot.command('help', async ctx => {
         '/typo              - повідомити про друкарську помилку\n' +
         '/idea              - відправити ідею\n' +
         '/nohelp            - повідомити про відсутність розділу допомоги\n' +
+        '/account           - показати твій акаунт і привʼязані персонажі\n' +
+        '/attach DL-XXXXX   - привʼязати персонажа кодом з гри («аккаунт связать»)\n' +
+        '/reset імʼя        - скинути пароль персонажа (тільки в приваті)\n' +
         '/cat               - випадковий котик\n' +
         '/cat says/meow meow - кіт з написом\n' +
         '/cat hat/says/hello - кіт з тегом hat і написом\n' +
@@ -141,6 +163,55 @@ bot.command('who', async ctx => {
       'Сталася помилка під час отримання інформації. Будь ласка, спробуйте пізніше.'
     );
   }
+});
+
+// --- passwordless account layer (Phase 3) ---
+
+bot.command('account', async ctx => {
+  const result = await dreamland.accountInfo({
+    identityType: 'telegram',
+    value: String(ctx.from.id),
+  });
+  ctx.replyWithMarkdown(result);
+});
+
+bot.command('attach', async ctx => {
+  const code = (ctx.state.command.args || '').toString().trim();
+  if (!/^DL-/i.test(code)) {
+    return ctx.reply(
+      'Використання: /attach DL-XXXXX. Код отримаєш у грі командою «аккаунт связать».'
+    );
+  }
+  const display = ctx.from.username
+    ? '@' + ctx.from.username
+    : ctx.from.first_name;
+  const result = await dreamland.redeem({
+    code,
+    identityType: 'telegram',
+    value: String(ctx.from.id),
+    display,
+  });
+  ctx.reply(result);
+});
+
+bot.command('reset', async ctx => {
+  // The temp password is a secret -- refuse in groups so it can't land in a
+  // shared chat. Private chat only.
+  if (ctx.chat && ctx.chat.type !== 'private') {
+    return ctx.reply(
+      'Скидання пароля — тільки в приваті. Напиши мені /reset імʼя_персонажа особисто.'
+    );
+  }
+  const char = (ctx.state.command.args || '').toString().trim();
+  if (!char) {
+    return ctx.reply('Використання: /reset імʼя_персонажа (латиницею).');
+  }
+  const result = await dreamland.resetpw({
+    identityType: 'telegram',
+    value: String(ctx.from.id),
+    char,
+  });
+  ctx.reply(result);
 });
 
 console.log('Bot is starting...');

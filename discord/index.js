@@ -72,19 +72,67 @@ client.on('message', async (msg) => {
     }
 
     if (msg.content.match(/^\/link/)) {
-        let args = msg.content.match(/^\/link ([a-zA-Z0-9]+)$/);
+        let args = msg.content.match(/^\/link ([a-zA-Z0-9\-]+)$/);
         if (!args) {
-            msg.reply('Использование: /link секретное_слово. Слово можно получить изнутри мира по команде config discord.');
+            msg.reply('Использование: /link секретное_слово (для персонажа) или /link DL-XXXXX (код привязки аккаунта из игры, команда «аккаунт связать»).');
+            return;
+        }
+
+        const word = args[1];
+
+        // DL-XXXXX -> account linking code (redeem against this Discord identity).
+        // A bare word is the old per-character status link (config discord).
+        if (/^DL-/i.test(word)) {
+            const result = await dreamland.redeem({
+                code: word,
+                identityType: 'discord',
+                value: msg.author.id,
+                display: msg.author.username,
+            });
+            msg.reply(result);
             return;
         }
 
         const response = await dreamland.link({
-            id: msg.author.id, 
-            username: msg.author.username, 
-            link: args[1], 
-            status: 'online' 
+            id: msg.author.id,
+            username: msg.author.username,
+            link: word,
+            status: 'online'
         });
         msg.reply(response);
+        return;
+    }
+
+    if (msg.content.match(/^\/account( |$)/)) {
+        const result = await dreamland.accountInfo({
+            identityType: 'discord',
+            value: msg.author.id,
+        });
+        msg.reply(result);
+        return;
+    }
+
+    if (msg.content.match(/^\/reset( |$)/)) {
+        const resetArgs = msg.content.match(/^\/reset ([a-zA-Z]+)$/);
+        if (!resetArgs) {
+            msg.reply('Использование: /reset имя_персонажа (латиницей).');
+            return;
+        }
+
+        const result = await dreamland.resetpw({
+            identityType: 'discord',
+            value: msg.author.id,
+            char: resetArgs[1],
+        });
+
+        // The temp password is a secret -- deliver it in a DM, never in a channel.
+        try {
+            await msg.author.send(result);
+            if (msg.channel.type !== 'dm')
+                msg.reply('Отправил результат тебе в личку.');
+        } catch (e) {
+            msg.reply('Не смог написать в личку — открой личные сообщения боту и повтори.');
+        }
         return;
     }
 
