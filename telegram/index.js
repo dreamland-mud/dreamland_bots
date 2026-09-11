@@ -7,6 +7,15 @@ const dreamland = new DreamLand('telegram');
 const commandArgsMiddleware = require('./commandArgs');
 const fetch = require('node-fetch');
 
+// A rejected reply (a message in a CLOSED forum topic of our channel, a user who
+// blocked the bot, any Telegram 400) must never crash the process. Fire-and-forget
+// replies bypass bot.catch and would otherwise surface as an unhandled rejection
+// that kills the bot; systemd respawns it and it dies again on the next trigger.
+// Log it and keep serving.
+process.on('unhandledRejection', reason => {
+  console.log('Unhandled rejection:', (reason && (reason.description || reason.message)) || reason);
+});
+
 // 'start' - standard bot command. A t.me/<bot>?start=DL-XXXXX deep link arrives
 // as "/start DL-XXXXX" -- one tap redeems the account linking code. Parse the
 // payload straight off the message text: bot.start is registered before the

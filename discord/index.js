@@ -4,6 +4,13 @@ const auth = require('./auth.json')
 const DreamLand = require('../dreamland.js')
 const dreamland = new DreamLand('discord')
 
+// A rejected reply (blocked user, missing permission, any Discord API error) must
+// never crash the process. Fire-and-forget msg.reply/send calls would otherwise
+// surface as an unhandled rejection that kills the bot. Log it and keep serving.
+process.on('unhandledRejection', reason => {
+  console.log('Unhandled rejection:', (reason && (reason.message || reason.code)) || reason);
+});
+
 const myGuild = '969942531980808243';
 
 client.on('ready', () => {
