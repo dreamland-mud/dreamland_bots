@@ -198,7 +198,10 @@ class DreamLand {
     }
 
     const reason = await response.text().catch(() => '');
-    if (response.status === 400 && /another account/i.test(reason))
+    // The servlet phrases the cross-account refusal as "belongs to a different
+    // account" (accountservlet.cpp); accept "another" too so a future reword of
+    // either side does not silently drop this branch into the generic message.
+    if (response.status === 400 && /(different|another) account/i.test(reason))
       return 'Цей персонаж уже привʼязаний до іншого акаунта.';
     if (response.status === 400)
       return 'Код невірний або протермінований. У грі набери «аккаунт связать» і спробуй свіжий код (він живе 10 хвилин).';
