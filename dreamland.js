@@ -25,6 +25,17 @@ const enqueueToDream = (url, options = {}) => {
   return toDream;
 };
 
+// 1 / 2-4 / 5+ forms, with 11-14 taking the third.
+const pluralUa = (n, one, few, many) => {
+  const d = n % 10;
+  const dd = n % 100;
+  if (d === 1 && dd !== 11) return one;
+  if (d >= 2 && d <= 4 && (dd < 12 || dd > 14)) return few;
+  return many;
+};
+
+const pluralEn = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
 class DreamLand {
   constructor(bottype) {
     this.bottype = bottype;
@@ -74,31 +85,45 @@ class DreamLand {
     const args = { message: '' };
     const response = await enqueueToDream(`${api}/who`, this.options(args));
     const who = await response.json();
+    const en = this.bottype === 'discord';
+    const hasWeek = who.weekUniques !== undefined;
 
     let result = '';
 
     if (who.total === 0) {
-      result = 'У світі нікого немає!';
+      if (en)
+        result = hasWeek
+          ? `Nobody is in the world right now, but ${pluralEn(who.weekUniques, 'player')} visited this week.`
+          : 'Nobody is in the world!';
+      else
+        result = hasWeek
+          ? `Зараз у світі нікого, але за тиждень ${pluralUa(who.weekUniques, 'заходив', 'заходили', 'заходило')} ${who.weekUniques} ${pluralUa(who.weekUniques, 'гравець', 'гравці', 'гравців')}.`
+          : 'У світі нікого немає!';
     } else {
       if (who.people && who.people.length > 0)
         result +=
-          '\nЗараз у світі:\n\n' +
+          (en ? '\nIn the world now:\n\n' : '\nЗараз у світі:\n\n') +
           who.people
-            .map(
-              p =>
-                (p.name.ru || p.name.en) +
-                ', ' +
-                p.race.ru +
-                (p.clan ? ', клан ' + p.clan.en : '')
+            .map(p =>
+              en
+                ? p.name.en + ', ' + p.race.en + (p.clan ? ', clan ' + p.clan.en : '')
+                : (p.name.ru || p.name.en) + ', ' + (p.race.ua || p.race.ru) + (p.clan ? ', клан ' + (p.clan.ua || p.clan.en) : '')
             )
             .join('\n');
 
       if (who.discord && who.discord.length > 0)
         result +=
-          '\n\nЧують канали: ' +
-          who.discord.map(p => p.name.ru || p.name.en).join(', ');
+          (en ? '\n\nListening on channels: ' : '\n\nЧують канали: ') +
+          who.discord.map(p => (en ? p.name.en : p.name.ru || p.name.en)).join(', ');
 
-      result += '\n\nУсього гравців: ' + who.total + '.';
+      if (en)
+        result += hasWeek
+          ? `\n\n${who.total} total, weekly peak ${who.weekPeak}, ${pluralEn(who.weekUniques, 'player')} visited this week.`
+          : `\n\n${who.total} total.`;
+      else
+        result += hasWeek
+          ? `\n\nУсього гравців: ${who.total}, максимум за тиждень ${who.weekPeak}, за тиждень ${pluralUa(who.weekUniques, 'заходив', 'заходили', 'заходило')} ${who.weekUniques} ${pluralUa(who.weekUniques, 'гравець', 'гравці', 'гравців')}.`
+          : `\n\nУсього гравців: ${who.total}.`;
     }
 
     return wrapInCodeBlock(result);
