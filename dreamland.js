@@ -145,8 +145,10 @@ class DreamLand {
         ? whoisData.clan.nameUa || whoisData.clan.name
         : 'Немає';
       const remorts = whoisData.remorts || '0';
-      const title = whoisData.clan?.title
-        ? `Титул у клані: ${whoisData.clan.title}\n`
+      // clan.titleUa comes from newer servers; fall back to the Russian title.
+      const clanTitle = whoisData.clan?.titleUa || whoisData.clan?.title;
+      const title = clanTitle
+        ? `Титул у клані: ${clanTitle}\n`
         : '';
       const capitalizedPlayerName =
         name.charAt(0).toUpperCase() + name.slice(1);
