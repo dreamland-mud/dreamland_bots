@@ -60,7 +60,8 @@ client.on('message', msg => {
 
 client.on('message', async (msg) => {
  
-    if (msg.channel.type === 'text' && !msg.channel.name.startsWith('дрим'))
+    // Channels were renamed from дрим-* to dream-*; accept both.
+    if (msg.channel.type === 'text' && !/^(дрим|dream)/.test(msg.channel.name))
         return;
 
     if (msg.content.match(/^\/who *$/)) {
