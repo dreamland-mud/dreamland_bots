@@ -93,11 +93,11 @@ class DreamLand {
     if (who.total === 0) {
       if (en)
         result = hasWeek
-          ? `Nobody is in the world right now, but ${pluralEn(who.weekUniques, 'player')} visited this week.`
+          ? `Nobody is in the world right now, but ${pluralEn(who.weekUniques, 'character')} visited this week.`
           : 'Nobody is in the world!';
       else
         result = hasWeek
-          ? `Зараз у світі нікого, але за тиждень ${pluralUa(who.weekUniques, 'заходив', 'заходили', 'заходило')} ${who.weekUniques} ${pluralUa(who.weekUniques, 'гравець', 'гравці', 'гравців')}.`
+          ? `Зараз у світі нікого, але за тиждень ${pluralUa(who.weekUniques, 'заходив', 'заходили', 'заходило')} ${who.weekUniques} ${pluralUa(who.weekUniques, 'персонаж', 'персонажі', 'персонажів')}.`
           : 'У світі нікого немає!';
     } else {
       if (who.people && who.people.length > 0)
@@ -118,11 +118,11 @@ class DreamLand {
 
       if (en)
         result += hasWeek
-          ? `\n\n${who.total} total, weekly peak ${who.weekPeak}, ${pluralEn(who.weekUniques, 'player')} visited this week.`
+          ? `\n\n${who.total} total, weekly peak ${who.weekPeak}, ${pluralEn(who.weekUniques, 'character')} visited this week.`
           : `\n\n${who.total} total.`;
       else
         result += hasWeek
-          ? `\n\nУсього гравців: ${who.total}, максимум за тиждень ${who.weekPeak}, за тиждень ${pluralUa(who.weekUniques, 'заходив', 'заходили', 'заходило')} ${who.weekUniques} ${pluralUa(who.weekUniques, 'гравець', 'гравці', 'гравців')}.`
+          ? `\n\nУсього гравців: ${who.total}, максимум за тиждень ${who.weekPeak}, за тиждень ${pluralUa(who.weekUniques, 'заходив', 'заходили', 'заходило')} ${who.weekUniques} ${pluralUa(who.weekUniques, 'персонаж', 'персонажі', 'персонажів')}.`
           : `\n\nУсього гравців: ${who.total}.`;
     }
 
