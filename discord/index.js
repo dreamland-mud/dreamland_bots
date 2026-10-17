@@ -1,5 +1,15 @@
-const Discord = require('discord.js')
-const client = new Discord.Client()
+const { Client, GatewayIntentBits, Partials, ChannelType, Events } = require('discord.js')
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers,     // privileged: member list for the who-list sync
+        GatewayIntentBits.GuildPresences,   // privileged: online/idle/dnd status sync
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,   // privileged: the old text commands
+        GatewayIntentBits.DirectMessages,
+    ],
+    partials: [Partials.Channel],           // DM channels are not cached until the first message
+})
 const auth = require('./auth.json')
 const DreamLand = require('../dreamland.js')
 const dreamland = new DreamLand('discord')
@@ -13,55 +23,130 @@ process.on('unhandledRejection', reason => {
 
 const myGuild = '969942531980808243';
 
-client.on('ready', () => {
+// Player text goes back into channels: never let it ping @everyone or roles.
+const noMentions = { parse: [] };
+
+const linkUsage = 'Использование: /link секретное_слово (для персонажа) или /link DL-XXXXX (код привязки аккаунта из игры, команда «аккаунт связать»).';
+const resetUsage = 'Использование: /reset имя_персонажа (латиницей).';
+
+// DL-XXXXX -> account linking code (redeem against this Discord identity).
+// A bare word is the old per-character status link (config discord).
+async function linkWord(user, word) {
+    if (/^DL-/i.test(word))
+        return dreamland.redeem({
+            code: word,
+            identityType: 'discord',
+            value: user.id,
+            display: user.username,
+        });
+
+    return dreamland.link({
+        id: user.id,
+        username: user.username,
+        link: word,
+        status: 'online'
+    });
+}
+
+client.once(Events.ClientReady, async () => {
     console.log(`Logged in as ${client.user.tag}!`);
 
     const guild = client.guilds.cache.get(myGuild);
-    const members = guild.members.cache
+    const all = await guild.members.fetch({ withPresences: true });
+    const members = all
         .filter(m => !m.user.bot)
-        .filter(m => m.presence.status !== 'offline')
+        .filter(m => m.presence && m.presence.status !== 'offline')
         .map(m => ({
             id: m.id,
             username: m.user.username,
             status: m.presence.status
         }));
 
-
     dreamland.updateAll(members);
 });
 
-client.on("presenceUpdate", (oldMember, newMember) => {
-    if (!oldMember || !oldMember.guild)	
-	return;
-
-    if (oldMember.guild.id !== myGuild)
+client.on(Events.PresenceUpdate, (oldPresence, newPresence) => {
+    if (!newPresence.guild || newPresence.guild.id !== myGuild)
         return;
 
-    if (oldMember.user.bot)
+    const user = newPresence.user || (newPresence.member && newPresence.member.user);
+    if (!user || user.bot)
         return;
 
-    const id = oldMember.user.id;
-    const username = oldMember.user.username;
-    const oldPresence = oldMember.frozenPresence;
-    const newPresence = newMember.guild.presences.cache.get(id);
-        
     if (oldPresence && oldPresence.status === newPresence.status)
         return;
 
-    const player = { id, username, status: newPresence.status };
+    const player = { id: user.id, username: user.username, status: newPresence.status };
     dreamland.updateOne(player);
 })
 
-client.on('message', msg => {
+/*
+ * Slash commands (definitions in commands.js, registered by register-commands.js).
+ * Defer first: Discord drops an interaction not answered within 3 seconds, and the
+ * game API queue can be slower than that. Account answers are ephemeral -- only the
+ * caller sees them, which also keeps link codes and temp passwords out of channels.
+ */
+// /ooc too: the game already relays the line to the Discord stream channel.
+const ephemeral = new Set(['ooc', 'link', 'account', 'reset']);
+
+client.on(Events.InteractionCreate, async (interaction) => {
+    if (!interaction.isChatInputCommand())
+        return;
+
+    const name = interaction.commandName;
+    const user = interaction.user;
+
+    try {
+        await interaction.deferReply({ ephemeral: ephemeral.has(name) });
+        let response;
+
+        if (name === 'who') {
+            response = await dreamland.who();
+        }
+        else if (name === 'ooc') {
+            const message = interaction.options.getString('message');
+            const error = await dreamland.ooc({ id: user.id, message });
+            response = error || 'Надіслано в OOC.';
+        }
+        else if (name === 'link') {
+            const word = interaction.options.getString('code').trim();
+            response = /^[a-zA-Z0-9\-]+$/.test(word) ? await linkWord(user, word) : linkUsage;
+        }
+        else if (name === 'account') {
+            response = await dreamland.accountInfo({ identityType: 'discord', value: user.id });
+        }
+        else if (name === 'reset') {
+            const char = interaction.options.getString('character').trim();
+            response = /^[a-zA-Z]+$/.test(char)
+                ? await dreamland.resetpw({ identityType: 'discord', value: user.id, char })
+                : resetUsage;
+        }
+
+        await interaction.editReply({ content: response || 'Готово.', allowedMentions: noMentions });
+    } catch (e) {
+        console.log(`/${name} failed:`, e.message || e);
+        const content = 'DreamLand не відповідає, спробуй пізніше.';
+        if (interaction.deferred || interaction.replied)
+            await interaction.editReply({ content }).catch(() => {});
+        else
+            await interaction.reply({ content, ephemeral: true }).catch(() => {});
+    }
+});
+
+/*
+ * The old text commands, kept while players move over to the slash ones.
+ */
+client.on(Events.MessageCreate, async (msg) => {
+    if (msg.author.bot)
+        return;
+
     if (msg.content === 'ping') {
         msg.reply('pong');
+        return;
     }
-})
 
-client.on('message', async (msg) => {
- 
     // Channels were renamed from дрим-* to dream-*; accept both.
-    if (msg.channel.type === 'text' && !/^(дрим|dream)/.test(msg.channel.name))
+    if (msg.channel.type === ChannelType.GuildText && !/^(дрим|dream)/.test(msg.channel.name))
         return;
 
     if (msg.content.match(/^\/who *$/)) {
@@ -82,32 +167,11 @@ client.on('message', async (msg) => {
     if (msg.content.match(/^\/link/)) {
         let args = msg.content.match(/^\/link ([a-zA-Z0-9\-]+)$/);
         if (!args) {
-            msg.reply('Использование: /link секретное_слово (для персонажа) или /link DL-XXXXX (код привязки аккаунта из игры, команда «аккаунт связать»).');
+            msg.reply(linkUsage);
             return;
         }
 
-        const word = args[1];
-
-        // DL-XXXXX -> account linking code (redeem against this Discord identity).
-        // A bare word is the old per-character status link (config discord).
-        if (/^DL-/i.test(word)) {
-            const result = await dreamland.redeem({
-                code: word,
-                identityType: 'discord',
-                value: msg.author.id,
-                display: msg.author.username,
-            });
-            msg.reply(result);
-            return;
-        }
-
-        const response = await dreamland.link({
-            id: msg.author.id,
-            username: msg.author.username,
-            link: word,
-            status: 'online'
-        });
-        msg.reply(response);
+        msg.reply(await linkWord(msg.author, args[1]));
         return;
     }
 
@@ -123,7 +187,7 @@ client.on('message', async (msg) => {
     if (msg.content.match(/^\/reset( |$)/)) {
         const resetArgs = msg.content.match(/^\/reset ([a-zA-Z]+)$/);
         if (!resetArgs) {
-            msg.reply('Использование: /reset имя_персонажа (латиницей).');
+            msg.reply(resetUsage);
             return;
         }
 
@@ -136,7 +200,7 @@ client.on('message', async (msg) => {
         // The temp password is a secret -- deliver it in a DM, never in a channel.
         try {
             await msg.author.send(result);
-            if (msg.channel.type !== 'dm')
+            if (msg.channel.type !== ChannelType.DM)
                 msg.reply('Отправил результат тебе в личку.');
         } catch (e) {
             msg.reply('Не смог написать в личку — открой личные сообщения боту и повтори.');
@@ -147,7 +211,7 @@ client.on('message', async (msg) => {
     if (msg.content.match(/^\/(reboot|deny|ban)/)) {
         const response = await dreamland.admin({
             id: msg.author.id,
-            username: msg.author.username, 
+            username: msg.author.username,
             command: msg.content.substring(1)
         });
         msg.reply(response);
@@ -156,4 +220,3 @@ client.on('message', async (msg) => {
 });
 
 client.login(auth.token);
-
