@@ -11,10 +11,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "discord.js": "14.15.3",
+    "discord.js": "14.14.1",
     "node-fetch": "^2.6.0"
   },
   "engines": {
     "node": ">=16.11.0"
+  },
+  "overrides": {
+    "@discordjs/rest": "2.2.0",
+    "undici": "5.28.4"
   }
 }
