@@ -29,6 +29,7 @@ bea26a2221fd8090ea38720fc445eca6
 * Save shared secret in two places:
     * On MUD side, inside the `/path/to/runtime/var/misc/dreamland_bot.token` file, e.g. `echo owi49slslsl > var/misc/dreamland_bot.token`
     * On bot side, inside the `DREAMLAND_TOKEN` environment variable, e.g. `export DREAMLAND_TOKEN=owi49slslsl`
+    * This token opens the community endpoints and `/admin` only. Code-running endpoints (`/eval`, `/exec`, `/force`, ...) take a separate `var/misc/dreamland_ops.token` that the bots never hold. Keep the two values different.
 
 * Run the bot:
 ```bash
